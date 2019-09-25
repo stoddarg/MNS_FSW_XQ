@@ -266,8 +266,7 @@ int main()
 				SetFileName(GetIntParam(1), DAQ_run_number, 0);	//creates a file name of IDNum_runNum_type.bin
 				//check that the file name(s) do not already exist on the SD card...we do not want to append existing files
 
-				status = DoesFileExist();	//fixed f_stat 8-14-2019
-
+				status = DoesFileExist();
 //				if(status == CMD_ERROR)		//TEST 05-16 (commented)
 //				{
 //					//handle a non-success/failure return
@@ -520,8 +519,13 @@ int main()
 				status = 1;	//failed to get data type
 				break;
 			}
-			if(status != 0)					//TEST 5/14/2019
-				reportFailure(Uart_PS);		//TEST 5/14/2019
+			//before we try and send SOH or a report Failure packet make sure the UART is done sending
+			while(XUartPs_IsSending(&Uart_PS))
+			{
+				//wait //testing 9-25-2019
+			}
+			if(status != 0)
+				reportFailure(Uart_PS);
 			break;
 		case DEL_CMD:
 			//delete a file from the SD card
@@ -618,10 +622,6 @@ int main()
 			//Report CMD_FAILURE
 			break;
 		}//END OF SWITCH/CASE (MAIN MENU OF FUNCTIONS)
-
-		//check to see if it is time to report SOH information, 1 Hz
-		//this may help with functions which take too long during their own loops
-		CheckForSOH(&Iic, Uart_PS);
 	}//END OF OUTER LEVEL 2 TESTING LOOP
 
     return 0;

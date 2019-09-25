@@ -567,7 +567,7 @@ int TransferSDFile( XUartPs Uart_PS, char * RecvBuffer, int file_type, int id_nu
 	int file_TX_file_pointer_location = 0;
 	int m_loop_var = 1;					//0 = false; 1 = true
 	int bytes_to_read = 0;				//number of bytes to read from data file to put into packet data bytes
-//	unsigned int m_send_wait_count = 0;
+	unsigned int m_send_wait_count = 0;
 	unsigned int bytes_written;
 	unsigned int bytes_read = 0;
 	unsigned int file_TX_2DH_oor_values[5] = {};
@@ -589,9 +589,6 @@ int TransferSDFile( XUartPs Uart_PS, char * RecvBuffer, int file_type, int id_nu
 	fno.lfname = LFName;
 	fno.lfsize = sizeof(LFName);
 	FRESULT f_res = FR_OK;	//SD card status variable type
-
-	XTime wait_1_sec;	//TESTING 8-14-2019
-	XTime wait_start;	//TESTING 8-14-2019
 
 	//find the folder/file that was requested
 	if(file_type == DATA_TYPE_LOG)
@@ -937,17 +934,11 @@ int TransferSDFile( XUartPs Uart_PS, char * RecvBuffer, int file_type, int id_nu
 			bytes_sent = XUartPs_Send(&Uart_PS, &(packet_array[sent]), file_TX_packet_size - sent);
 			sent += bytes_sent;
 		}
-
-		//TESTING 8-21-2019
-		//make the system wait for 0.1 second before starting to work on the next packet
-		XTime_GetTime(&wait_start);
-		while(1)
+		//ensure that the UART is finished before we try and push more
+		while(XUartPs_IsSending(&Uart_PS))
 		{
-			XTime_GetTime(&wait_1_sec);
-			if((float)(wait_1_sec - wait_start)/COUNTS_PER_SECOND >= 0.1)
-				break;
+			//wait //testing 9-25-2019
 		}
-		//TESTING 8-21-2019
 
 		//check if there are multiple packets to send
 		switch(file_TX_group_flags)
