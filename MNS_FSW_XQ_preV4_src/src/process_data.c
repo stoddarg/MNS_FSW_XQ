@@ -147,6 +147,11 @@ int ProcessData( unsigned int * data_raw )
 							m_pmt_ID_holder = data_raw[iter+3] & 0x0F;
 							switch(m_pmt_ID_holder)
 							{
+							case NO_HIT_PATTERN:
+								event_holder.field1 |= 0x00; //No hit pattern detected
+								//do we want to keep processing this event? If there is no hit ID coming through, is it just noise?
+								//keep this case for now so we have a reminder to ask about this situation
+								break;
 							case PMT_ID_0:
 								event_holder.field1 |= 0x10; //PMT 0
 								break;
@@ -160,13 +165,14 @@ int ProcessData( unsigned int * data_raw )
 								event_holder.field1 |= 0x80; //PMT 3
 								break;
 							default:
-								//handles bad/multi-hit PMT IDs
-								event_holder.field1 |= (m_pmt_ID_holder << 4); //shift by 4 to get this to fit correctly
+								//invalid event or Multi-Hit event
+								//TODO: Handle bad/multiple hit IDs
+								event_holder.field1 |= (m_pmt_ID_holder << 4); //OR the bits to get the full hit pattern
 								break;
 							}
 							m_total_events_holder = data_raw[iter+2] & 0xFFF;	//mask the upper bits we don't care about
 							event_holder.field1 |= (unsigned char)(m_total_events_holder >> 8);
-							event_holder.field2 |= (unsigned char)(m_total_events_holder & 0xFF);
+							event_holder.field2 |= (unsigned char)(m_total_events_holder);
 
 							si = 0.0;	li = 0.0;	fi = 0.0;	psd = 0.0;	energy = 0.0;
 							bl4 = bl3; bl3 = bl2; bl2 = bl1;
@@ -190,7 +196,7 @@ int ProcessData( unsigned int * data_raw )
 								m_bad_event++;
 							}
 
-							m_neutron_detected = CPSUpdateTallies(energy, psd);
+							m_neutron_detected = CPSUpdateTallies(energy, psd, m_pmt_ID_holder);
 							IncNeutronTotal(m_neutron_detected);	//increment the neutron total by 1? TODO: check the return here and make sure it has increased?
 							if(m_neutron_detected == 1)
 								m_tagging_bit = 1;
@@ -249,10 +255,10 @@ int ProcessData( unsigned int * data_raw )
 				event_holder.field1 = 0xDD;
 				event_holder.field2 = 0xDD;
 				event_holder.field3 = 0xDD;
-				event_holder.field4 = 0x00 | (data_raw[iter + 2] >> 30);
-				event_holder.field5 = data_raw[iter + 2] >> 22;
-				event_holder.field6 = data_raw[iter + 2] >> 14;
-				event_holder.field7 = data_raw[iter + 2] >> 6;
+				event_holder.field4 = 0xDD;
+				event_holder.field5 = (unsigned char)(data_raw[iter + 2] >> 24);
+				event_holder.field6 = (unsigned char)(data_raw[iter + 2] >> 16);
+				event_holder.field7 = (unsigned char)(data_raw[iter + 2] >> 8);
 
 				event_buffer[evt_iter] = event_holder;
 				evt_iter++;
@@ -278,7 +284,6 @@ int ProcessData( unsigned int * data_raw )
 		if(m_events_processed >= VALID_BUFFER_SIZE)	//we have processed every event in the buffer (max of 512)
 			break;
 		//TODO: fully error check the buffering here
-		//2-15, anything else?
 	}//END OF WHILE
 
 	//TODO: give this return value a meaning
