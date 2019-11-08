@@ -3,3 +3,5 @@
 - Version 1.1 This version includes a new detector number (0/1) for one of the sets of boot files. This is indicated in the folder name; these files have also been uploaded to dropbox for ease of use. Also, the baud rate for these boot files is lower (115200 bps) rather than the previous higher value. This is to try and just get a better transfer for lowering the baud with no other changes. A number of other changes have been implemented with this version, but they are documented starting on p97 of Graham's notes, book 102 (11). 
 
 - Version 2.0 This version pulls in all the changes that have been made to the XC FSW repository for the Mini-NS as of 10/21. This project is to create the XQ boot files which are used by the Mini-NS Flight Unit and the Neutron-1 Flight Unit. This has boot files for version 4 of the FSW at both high and low baud rates.
+
+- Version 2.1 Pulled in the updates from FSW_XC version 6.5. Added the 15ms wait into this version and updated the boot files in the FSBL folder.

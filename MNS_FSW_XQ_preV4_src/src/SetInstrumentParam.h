@@ -30,10 +30,16 @@
  *  reduce the amount of interaction necessary.
  *
  * See the Mini-NS ICD for a breakdown of these parameters and how to change them.
- * Current ICD version: 9.3.0
+ * Current ICD version: 10.4.0
  *
- * Size = 172 bytes (4/8/19)
- * No padding bytes (4/8/19)
+ * Size = 300 bytes (10/23/19)
+ * No padding bytes
+ * Outline:
+ * 	4 x 2
+ * 	4 x 5
+ * 	4 x 4
+ * 	8 x 8 x 4
+ * 	Doubles are 8 bytes.
  */
 typedef struct {
 	float ECalSlope;
@@ -58,8 +64,13 @@ typedef struct {
 * 		Thus, for file type CPS, we put a 5 as that char, which corresponds
 * 		 to APID_MNS_CPS and DATA_TYPE_CPS
 *
-* Size = 188 bytes (4/8/19)
-* No padding bytes (4/8/19)
+* Size = 320 bytes (10/23/19)
+* 4 padding bytes (10/23/19)
+* Outline:
+* 	config buff = 300 bytes
+* 	padding bytes = 4 bytes
+* 	4 x 3 = 12 bytes
+* 	1 x 4 = 4 bytes
 */
 typedef struct{
 	CONFIG_STRUCT_TYPE configBuff;	//43 4-byte values
@@ -75,12 +86,7 @@ typedef struct{
 /*
  * Secondary file header for EVT, CPS data products
  *
- * Size = 24 bytes
- * 4 padding bytes at end, noted below (4/8/19)
- *
- * Size = 16 bytes??? - need to check this 9/6/2019
- * Changed this to reflect that we no longer have a 64-bit time from the spacecraft
- * padding bytes?
+ * Size = 16 bytes (10/23/19)
  */
 typedef struct{
 	unsigned int RealTime;
@@ -99,12 +105,7 @@ typedef struct{
 /*
  * Footer for EVT, CPS data products
  *
- * Size = 32 bytes (4/8/19)
- * 8 padding bytes, noted below (4/8/19)
- *
- * Size = 20 bytes??? - need to check this 9/6/2019
- * Changed this to reflect that we no longer have a 64-bit time from the spacecraft
- * padding bytes?
+ * Size = 20 bytes (10/23/19)
  *
  */
 typedef struct{
