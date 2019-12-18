@@ -407,16 +407,27 @@ int SetNeutronCutGates(int moduleID, int ellipseNum, float scaleE, float scaleP,
 }
 
 /*
- * Set High Voltage  (note: connections to pot 2 and pot 3 are reversed - handled in the function)
+ * Set the High Voltage of the HV potentiometers on the analog board
+ *
+ * NOTE: connections to pot 1 and pot 2 are reversed - handled in the function
+ * 	What this means is that the address for PMT 1 and PMT 2 got swapped, so when
+ * 	we are trying to change the pot value for PMT 1, we need the address for PMT 2
+ * 	and the reverse for PMT 2.
  *
  * As of 7/25/2019 this swap is not going to be fixed for the Mini-NS code.
+ * 12-18-2019 - the swap is handled by this function.
+ * 	Externally calling the function (ie as a commanded function) use the command
+ * 		as it is listed in the ICD.
+ * 	Internally calling this function, we want to swap the value that we are sending
+ * 		to the pot because the values are saved in the opposite spot in the
+ * 		configuration file.
  *
- * 		Syntax: SetHighVoltage(PMTID, Value)
- * 			PMTID = (Integer) PMT ID, 0 - 3, 4 to choose all tubes
- * 			Value = (Integer) high voltage to set, 0 - 255 (not linearly mapped to volts)
- * 		Description: Set the bias voltage on any PMT in the array. The PMTs may be set individually or as a group.
- *			Latency: TBD
- *			Return: command SUCCESS (0) or command FAILURE (1)
+ * 	Syntax: SetHighVoltage(PMTID, Value)
+ * 		PMTID = (Integer) PMT ID, 0 - 3, 4 to choose all tubes
+ * 		Value = (Integer) high voltage to set, 0 - 255 (not linearly mapped to volts)
+ * 	Description: Set the bias voltage on any PMT in the array. The PMTs may be set individually or as a group.
+ *		Latency: TBD
+ *		Return: command SUCCESS (0) or command FAILURE (1)
  */
 int SetHighVoltage(XIicPs * Iic, unsigned char PmtId, int Value)
 {
@@ -428,7 +439,9 @@ int SetHighVoltage(XIicPs * Iic, unsigned char PmtId, int Value)
 	int status = 0;
 	int iterator = 0;
 
-	// Fix swap of pot 2 and 3 connections if PmtId == 1 make it 2 and if PmtId == 2 make it 1
+	// Fix swap of pot 1 and 2 connections if PmtId == 1, make it 2 and if PmtId == 2, make it 1
+	//This implies that the value for the HV for PMT ID 1 is stored in the configuration file spot for PMT 2
+	// and the value for PMT ID 2 is stored in the configuration spot for PMT 1.
 	if(PmtId == 1)
 	{
 		PmtId = 2;
@@ -580,13 +593,13 @@ int ApplyDAQConfig( XIicPs * Iic )
 	if(status == CMD_SUCCESS)
 		status = SetIntegrationTime(ConfigBuff.IntegrationBaseline, ConfigBuff.IntegrationShort, ConfigBuff.IntegrationLong, ConfigBuff.IntegrationFull);
 	if(status == CMD_SUCCESS)
-		status = SetHighVoltage(Iic, 1, ConfigBuff.HighVoltageValue[0]);
+		status = SetHighVoltage(Iic, 0, ConfigBuff.HighVoltageValue[0]);
 	if(status == CMD_SUCCESS)
-		status = SetHighVoltage(Iic, 2, ConfigBuff.HighVoltageValue[1]);
+		status = SetHighVoltage(Iic, 1, ConfigBuff.HighVoltageValue[2]);	//swapped intentionally
 	if(status == CMD_SUCCESS)
-		status = SetHighVoltage(Iic, 3, ConfigBuff.HighVoltageValue[2]);
+		status = SetHighVoltage(Iic, 2, ConfigBuff.HighVoltageValue[1]);	//swapped intentionally
 	if(status == CMD_SUCCESS)
-		status = SetHighVoltage(Iic, 4, ConfigBuff.HighVoltageValue[3]);
+		status = SetHighVoltage(Iic, 3, ConfigBuff.HighVoltageValue[3]);
 	//set n cuts
 	if(status == CMD_SUCCESS)
 		status = SetNeutronCutGates(0, 1, ConfigBuff.SF_E[0], ConfigBuff.SF_PSD[0], ConfigBuff.Off_E[0], ConfigBuff.Off_PSD[0]);
