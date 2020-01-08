@@ -512,6 +512,10 @@ int DataAcquisition( XIicPs * Iic, XUartPs Uart_PS, char * RecvBuffer, int time_
 	FRESULT f_res = FR_OK;
 	GENERAL_EVENT_TYPE * evts_array = NULL;
 
+	//timing variables
+	XTime tStart = 0;
+	XTime tEnd = 0;
+
 	memset(&m_write_blank_space_buff, 186, 16384);
 
 	ResetEVTsBuffer();
@@ -534,6 +538,9 @@ int DataAcquisition( XIicPs * Iic, XUartPs Uart_PS, char * RecvBuffer, int time_
 		valid_data = Xil_In32 (XPAR_AXI_GPIO_11_BASEADDR);
 		if(valid_data == 1)
 		{
+//**************//Start timing here for tracking the latency
+			XTime_GetTime(&tStart);
+
 			//init/start MUX to transfer data between integrator modules and the DMA
 			Xil_Out32 (XPAR_AXI_GPIO_15_BASEADDR, 1);
 			Xil_Out32 (XPAR_AXI_DMA_0_BASEADDR + 0x48, DRAM_BASE);
@@ -547,6 +554,11 @@ int DataAcquisition( XIicPs * Iic, XUartPs Uart_PS, char * RecvBuffer, int time_
 			ClearBRAMBuffers();
 			Xil_DCacheInvalidateRange(DRAM_BASE, 65536);
 
+			XTime_GetTime(&tEnd);
+			printf("DMA %.2f\n", 1.0 * (tEnd - tStart) / (COUNTS_PER_SECOND/1000000));
+//*************//Time just the read-in loop
+//**************//here is where we just finished the DMA transfer between the FPGA and the processor
+			XTime_GetTime(&tStart);
 			array_index = 0;
 			dram_addr = dram_base;
 			while(dram_addr < DRAM_CEILING)
@@ -555,12 +567,31 @@ int DataAcquisition( XIicPs * Iic, XUartPs Uart_PS, char * RecvBuffer, int time_
 				dram_addr += 4;
 				array_index++;
 			}
+
+			XTime_GetTime(&tEnd);
+			printf("Read-in %.2f\n", 1.0 * (tEnd - tStart) / (COUNTS_PER_SECOND/1000000));
+//*************//Time just the read-in loop
+
+
+//*************//Time just the process data loop
+			XTime_GetTime(&tStart);
+
 			status_SOH = ProcessData( &data_array[DATA_BUFFER_SIZE * buff_num] );
+
+			XTime_GetTime(&tEnd);
+			printf("Process %.2f \n", 1.0 * (tEnd - tStart) / (COUNTS_PER_SECOND/1000000));
+//*************//End of timing just the process data loop
+
+
 			buff_num++;
 
-			if(buff_num == 3)
+			if(buff_num == 4)
 			{
 				buff_num = 0;
+
+
+//*************//Time the writing to SD card part of the loop
+				XTime_GetTime(&tStart);
 
 #ifdef PRODUCE_RAW_DATA
 				f_res = f_write(&m_raw_data_file, &data_array, DATA_BUFFER_SIZE * 4 * 4, &bytes_written);
@@ -689,15 +720,29 @@ int DataAcquisition( XIicPs * Iic, XUartPs Uart_PS, char * RecvBuffer, int time_
 
 				ResetEVTsBuffer();
 				ResetEVTsIterator();
+
+				XTime_GetTime(&tEnd);
+				printf("Write %d %.2f\n", m_buffers_written, 1.0 * (tEnd - tStart) / (COUNTS_PER_SECOND/1000000));
+//****************//End timing of the loop here //we have finished processing and finished saving
 			}
 			valid_data = 0;	//reset
 
 		}//END OF IF VALID DATA
 
-		//check to see if it is time to report SOH information, 1 Hz
+
+//*************//Time the writing to SD card part of the loop
+//		XTime_GetTime(&tStart);
+
 		CheckForSOH(Iic, Uart_PS);
 
+//		XTime_GetTime(&tEnd);
+//		printf("SOH %.2f\n", 1.0 * (tEnd - tStart) / (COUNTS_PER_SECOND/1000000));
+//****************//End timing of the loop here //we have finished processing and finished saving
+
 		//check for timeout
+//*************//Time the writing to SD card part of the loop
+//		XTime_GetTime(&tStart);
+
 		XTime_GetTime(&m_run_current_time);
 		if(((m_run_current_time - m_run_start)/COUNTS_PER_SECOND) >= m_run_time)
 		{
@@ -712,6 +757,12 @@ int DataAcquisition( XIicPs * Iic, XUartPs Uart_PS, char * RecvBuffer, int time_
 			status = DAQ_TIME_OUT;
 			done = 1;
 		}
+//		XTime_GetTime(&tEnd);
+//		printf("Timer %.2f\n", 1.0 * (tEnd - tStart) / (COUNTS_PER_SECOND/1000000));
+//****************//End timing of the loop here //we have finished processing and finished saving
+
+//*************//Time the writing to SD card part of the loop
+//		XTime_GetTime(&tStart);
 
 		poll_val = ReadCommandType(RecvBuffer, &Uart_PS);
 		switch(poll_val)
@@ -753,6 +804,11 @@ int DataAcquisition( XIicPs * Iic, XUartPs Uart_PS, char * RecvBuffer, int time_
 		default:
 			break;
 		}
+
+//		XTime_GetTime(&tEnd);
+//		printf("User %.2f\n", 1.0 * (tEnd - tStart) / (COUNTS_PER_SECOND/1000000));
+//****************//End timing of the loop here //we have finished processing and finished saving
+
 	}//END OF WHILE DONE != 1
 
 	//here is where we should transfer the CPS, 2DH files?
