@@ -9,3 +9,5 @@
 --- to match up the version numbers, we are skipping ahead to the current FSW version ---
 
 - Version 7.0 Bug fixes for the HV bug and the DIR checksum; implemented the DIR and DEL functions; other updates, see the main repository
+
+- Version 7.1 Updated boot files for ASU, HSFL FSW projects, these boot files have the bug fixes included
