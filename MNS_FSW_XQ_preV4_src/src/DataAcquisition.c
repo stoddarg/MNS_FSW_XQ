@@ -322,11 +322,7 @@ int CreateDAQFiles( void )
 		{
 			//TODO: handle change directory fail
 		}
-
-		//once we create the folder and change to it, update the number of folders
 		sd_totalFoldersIncrement();
-		//create the TX_bytes file to record the individual files
-//		sd_createTXBytesFile();	//comment 12-16-2019
 	}
 
 	for(iter = 0; iter < 6; iter++)
@@ -385,9 +381,6 @@ int CreateDAQFiles( void )
 							status = CMD_SUCCESS;
 						else
 							status = CMD_FAILURE;
-
-						//record the new file information in the tx_bytes file
-//						sd_updateFileRecords(file_to_open, file_size(DAQ_file));
 					}
 					if(iter < 2)	//sync the EVT, CPS files; we're leaving them open during the run
 					{
@@ -396,20 +389,12 @@ int CreateDAQFiles( void )
 							status = CMD_SUCCESS;
 						else
 							status = CMD_FAILURE;
-
-						//record the new file information in the tx_bytes file
-//						sd_updateFileRecords(file_to_open, file_size(DAQ_file));
 					}
 					else
 					{
-						//record the new file information in the tx_bytes file
-//						sd_updateFileRecords(file_to_open, file_size(DAQ_file));
-
 						f_close(DAQ_file);
 						status = CMD_SUCCESS;
 					}
-
-					//record that we have created a new file
 					sd_totalFilesIncrement();
 				}
 				else
@@ -535,10 +520,7 @@ int DataAcquisition( XIicPs * Iic, XUartPs Uart_PS, char * RecvBuffer, int time_
 	int valid_data = 0;				//goes high/low if there is valid data within the FPGA buffers
 	int buff_num = 0;				//keep track of which buffer we are writing
 	int buff_offset = 0;			//keep track of the buffer offset
-	int m_buffers_written = 0;		//keep track of how many buffers are written, but not synced
-//	int array_index = 0;			//the index of our array which will hold data
-//	int dram_addr = 0;				//the address in the DRAM we are reading from
-//	int dram_base = DRAM_BASE;		//where the buffer starts	//0x0A 00 00 00 = 167,772,160 //0x0A 00 40 00 = 167,788,544 - 167,788,544 = 16384
+	int m_buffers_written = 0;		//keep track of how many buffers are written, but not sync'd
 	int m_run_time = time_out * 60;	//multiply minutes by 60 to get seconds
 	int m_write_header = 1;			//write a file header the first time we use a file
 	XTime m_run_start; 				//timing variable
@@ -550,19 +532,6 @@ int DataAcquisition( XIicPs * Iic, XUartPs Uart_PS, char * RecvBuffer, int time_
 	GENERAL_EVENT_TYPE * evts_array = NULL;
 	//Data buffer which can hold 4096*4 integers, each buffer holds 512 8-integer events, x4 for four buffers
 	unsigned int data_array[DATA_BUFFER_SIZE * 4];
-	//if this doesn't work try allocating the array dynamically and try to see if the access time goes down
-//	buffers are 4096 ints long (512 events total)
-//	unsigned int *data_array;
-//	data_array = (unsigned int *)malloc(sizeof(unsigned int) * DATA_BUFFER_SIZE * 4);
-//	memset(data_array, '\0',  sizeof(unsigned int) * DATA_BUFFER_SIZE * 4);
-
-
-
-	//timing variables //delete when not timing
-//	XTime tBegin = 0;
-//	XTime tStart = 0;
-//	XTime tEnd = 0;
-
 	memset(&m_write_blank_space_buff, 186, 16384);
 
 	ResetEVTsBuffer();
@@ -570,19 +539,9 @@ int DataAcquisition( XIicPs * Iic, XUartPs Uart_PS, char * RecvBuffer, int time_
 
 	SetModeByte(MODE_DAQ);
 
-	//create file to save the raw integers to
 #ifdef PRODUCE_RAW_DATA
 	FIL m_raw_data_file;
 	f_res = f_open(&m_raw_data_file, "raw_data.bin", FA_OPEN_ALWAYS|FA_READ|FA_WRITE);
-
-//	f_res = f_write(&m_raw_data_file, &data_array, DATA_BUFFER_SIZE * 4 * 4, &bytes_written);
-//	if(f_res != FR_OK || bytes_written != DATA_BUFFER_SIZE * 4 * 4)
-//		status = CMD_FAILURE;
-
-	//record that we have created a new file
-//	sd_totalFilesIncrement();
-	//record the new file information in the tx_bytes file
-//	sd_updateFileRecords("raw_data.bin", file_size(&m_raw_data_file));
 #endif
 
 	while(done != 1)
@@ -590,10 +549,6 @@ int DataAcquisition( XIicPs * Iic, XUartPs Uart_PS, char * RecvBuffer, int time_
 		valid_data = Xil_In32 (XPAR_AXI_GPIO_11_BASEADDR);
 		if(valid_data == 1)
 		{
-//**************//Start timing here for tracking the latency
-//			XTime_GetTime(&tBegin);
-//			XTime_GetTime(&tStart);
-
 			//init/start MUX to transfer data between integrator modules and the DMA
 			Xil_Out32 (XPAR_AXI_GPIO_15_BASEADDR, 1);
 			Xil_Out32 (XPAR_AXI_DMA_0_BASEADDR + 0x48, DRAM_BASE);
@@ -607,47 +562,15 @@ int DataAcquisition( XIicPs * Iic, XUartPs Uart_PS, char * RecvBuffer, int time_
 			ClearBRAMBuffers();
 			Xil_DCacheInvalidateRange(DRAM_BASE, 65536);
 
-//			XTime_GetTime(&tEnd);
-//			printf("DMA Transfer took %.2f us\n", 1.0 * (tEnd - tStart) / (COUNTS_PER_SECOND/1000000));
-//*************//Time just the read-in loop
-
-//			dram_addr = dram_base;
-//			array_index = DATA_BUFFER_SIZE * buff_num;
-//			while(dram_addr < DRAM_CEILING)
-//			{
-//				data_array[array_index] = Xil_In32(dram_addr);
-//				dram_addr += 4;
-//				array_index++;
-//			}
-
-//**************//here is where we just finished the DMA transfer between the FPGA and the processor
-//			XTime_GetTime(&tStart);
 			DAQReadDataIn( data_array, buff_num);
-
-//			XTime_GetTime(&tEnd);
-//			printf("Read-in loop took %.2f us\n", 1.0 * (tEnd - tStart) / (COUNTS_PER_SECOND/1000000));
-//*************//Time just the read-in loop
-
-
-//*************//Time just the process data loop
-//			XTime_GetTime(&tStart);
 
 			buff_offset = DATA_BUFFER_SIZE * buff_num;
 			status_SOH = ProcessData( &data_array[buff_offset] );
 			buff_num++;
 
-//			XTime_GetTime(&tEnd);
-//			printf("ProcessData loop took %.2f us\n", 1.0 * (tEnd - tStart) / (COUNTS_PER_SECOND/1000000));
-//*************//End of timing just the process data loop
-
 			if(buff_num == 4)	//keep this to every 4th buffer, that's what it's set up for...
 			{
-
-//*************//Time the writing to SD card part of the loop
-//				XTime_GetTime(&tStart);
-
 				buff_num = 0;
-
 #ifdef PRODUCE_RAW_DATA
 				f_res = f_write(&m_raw_data_file, &data_array, DATA_BUFFER_SIZE * 4 * 4, &bytes_written);
 				if(f_res != FR_OK || bytes_written != DATA_BUFFER_SIZE * 4 * 4)
@@ -659,7 +582,6 @@ int DataAcquisition( XIicPs * Iic, XUartPs Uart_PS, char * RecvBuffer, int time_
 					//TODO: error check
 					xil_printf("8 error syncing DAQ\n");
 				}
-//				sd_updateFileRecords("raw_data.bin", file_size(&m_raw_data_file));
 #endif
 
 				//check the file size and see if we need to change files
@@ -670,8 +592,6 @@ int DataAcquisition( XIicPs * Iic, XUartPs Uart_PS, char * RecvBuffer, int time_
 					f_res = f_write(&m_EVT_file, &file_footer_to_write, sizeof(file_footer_to_write), &bytes_written);
 					if(f_res != FR_OK || bytes_written != sizeof(file_footer_to_write))
 						status = CMD_FAILURE;
-					//just before we close the file, write the final record of it
-//					sd_updateFileRecords(current_filename_EVT, file_size(&m_EVT_file));
 					//then close the file, as we're done with it
 					f_close(&m_EVT_file);
 					//create the new file name (increment the set number)
@@ -694,14 +614,12 @@ int DataAcquisition( XIicPs * Iic, XUartPs Uart_PS, char * RecvBuffer, int time_
 						f_res = f_write(&m_EVT_file, &file_secondary_header_to_write, sizeof(file_secondary_header_to_write), &bytes_written);
 						if(f_res != FR_OK || bytes_written != sizeof(file_secondary_header_to_write))
 							status = CMD_FAILURE;
-						//write blank bytes up to Cluster edge (16384
+						//write blank bytes up to Cluster edge (16384)
 						f_res = f_write(&m_EVT_file, m_write_blank_space_buff, 16384 - file_size(&m_EVT_file), &bytes_written);
 						if(f_res != FR_OK || bytes_written != sizeof(file_secondary_header_to_write))
 							status = CMD_FAILURE;
 						//record that we have created a new file
 						sd_totalFilesIncrement();
-						//record the new file information in the tx_bytes file
-//						sd_updateFileRecords(current_filename_EVT, file_size(&m_EVT_file));
 					}
 					else
 						status = CMD_FAILURE;
@@ -733,8 +651,6 @@ int DataAcquisition( XIicPs * Iic, XUartPs Uart_PS, char * RecvBuffer, int time_
 					if(f_res != FR_OK || bytes_written != sizeof(file_secondary_header_to_write))
 						status = CMD_FAILURE;
 
-//					sd_updateFileRecords(current_filename_EVT, file_size(&m_EVT_file));
-
 					f_res = f_lseek(&m_CPS_file, sizeof(file_header_to_write));	//want to move to the reserved space we allocated before the run, directly after header
 					f_res = f_write(&m_CPS_file, &file_secondary_header_to_write, sizeof(file_secondary_header_to_write), &bytes_written);
 					if(f_res != FR_OK || bytes_written != sizeof(file_secondary_header_to_write))
@@ -742,7 +658,6 @@ int DataAcquisition( XIicPs * Iic, XUartPs Uart_PS, char * RecvBuffer, int time_
 						//TODO: handle error checking the write
 						xil_printf("10 error writing DAQ\n");
 					}
-//					sd_updateFileRecords(current_filename_CPS, file_size(&m_CPS_file));
 
 					f_res = f_lseek(&m_CPS_file, file_size(&m_CPS_file));	//forward the file pointer so we're at the top of the file again
 
@@ -784,26 +699,14 @@ int DataAcquisition( XIicPs * Iic, XUartPs Uart_PS, char * RecvBuffer, int time_
 					m_buffers_written = 0;	//reset
 				}
 
-//				sd_updateFileRecords(current_filename_EVT, file_size(&m_EVT_file));
-
 				ResetEVTsBuffer();
 				ResetEVTsIterator();
-
-//****************//End timing of the loop here //we have finished processing and finished saving
-//				XTime_GetTime(&tEnd);
-//				printf("Write to SD loop took %.2f us\n", 1.0 * (tEnd - tStart) / (COUNTS_PER_SECOND/1000000));
 			}
 			valid_data = 0;	//reset
-
-//****************//End timing of the loop here //we have finished processing and finished saving
-//			XTime_GetTime(&tEnd);
-//			printf("Loop %d-%d took %.2f us\n", m_buffers_written, buff_num, 1.0 * (tEnd - tBegin) / (COUNTS_PER_SECOND/1000000));
 		}//END OF IF VALID DATA
 
-		//check to see if it is time to report SOH information, 1 Hz
-//		CheckForSOH(Iic, Uart_PS);	//disable SOH during DAQ so that it is easier to parse the timing output here //12-17-2019
+		CheckForSOH(Iic, Uart_PS);
 
-		//check for timeout
 		XTime_GetTime(&m_run_current_time);
 		if(((m_run_current_time - m_run_start)/COUNTS_PER_SECOND) >= m_run_time)
 		{
@@ -812,11 +715,11 @@ int DataAcquisition( XIicPs * Iic, XUartPs Uart_PS, char * RecvBuffer, int time_
 			f_res = f_write(&m_EVT_file, &file_footer_to_write, sizeof(file_footer_to_write), &bytes_written);
 			if(f_res != FR_OK || bytes_written != sizeof(file_footer_to_write))
 				status = CMD_FAILURE;
-//			sd_updateFileRecords(current_filename_EVT, file_size(&m_EVT_file));
+
 			f_res = f_write(&m_CPS_file, &file_footer_to_write, sizeof(file_footer_to_write), &bytes_written);
 			if(f_res != FR_OK || bytes_written != sizeof(file_footer_to_write))
 				status = CMD_FAILURE;
-//			sd_updateFileRecords(current_filename_CPS, file_size(&m_CPS_file));
+
 			status = DAQ_TIME_OUT;
 			done = 1;
 		}
@@ -840,11 +743,11 @@ int DataAcquisition( XIicPs * Iic, XUartPs Uart_PS, char * RecvBuffer, int time_
 			f_res = f_write(&m_EVT_file, &file_footer_to_write, sizeof(file_footer_to_write), &bytes_written);
 			if(f_res != FR_OK || bytes_written != sizeof(file_footer_to_write))
 				status = CMD_FAILURE;
-//			sd_updateFileRecords(current_filename_EVT, file_size(&m_EVT_file));
+
 			f_res = f_write(&m_CPS_file, &file_footer_to_write, sizeof(file_footer_to_write), &bytes_written);
 			if(f_res != FR_OK || bytes_written != sizeof(file_footer_to_write))
 				status = CMD_FAILURE;
-//			sd_updateFileRecords(current_filename_CPS, file_size(&m_CPS_file));
+
 			status = DAQ_BREAK;
 			done = 1;
 			break;
@@ -854,11 +757,11 @@ int DataAcquisition( XIicPs * Iic, XUartPs Uart_PS, char * RecvBuffer, int time_
 			f_res = f_write(&m_EVT_file, &file_footer_to_write, sizeof(file_footer_to_write), &bytes_written);
 			if(f_res != FR_OK || bytes_written != sizeof(file_footer_to_write))
 				status = CMD_FAILURE;
-//			sd_updateFileRecords(current_filename_EVT, file_size(&m_EVT_file));
+
 			f_res = f_write(&m_CPS_file, &file_footer_to_write, sizeof(file_footer_to_write), &bytes_written);
 			if(f_res != FR_OK || bytes_written != sizeof(file_footer_to_write))
 				status = CMD_FAILURE;
-//			sd_updateFileRecords(current_filename_CPS, file_size(&m_CPS_file));
+
 			status = DAQ_END;
 			done = 1;
 			break;
@@ -867,7 +770,6 @@ int DataAcquisition( XIicPs * Iic, XUartPs Uart_PS, char * RecvBuffer, int time_
 		}
 	}//END OF WHILE DONE != 1
 
-	//here is where we should transfer the CPS, 2DH files?
 	status_SOH = Save2DHToSD( PMT_ID_0 );
 	if(status_SOH != CMD_SUCCESS)
 		xil_printf("9 save sd 0 DAQ\n");
@@ -881,17 +783,12 @@ int DataAcquisition( XIicPs * Iic, XUartPs Uart_PS, char * RecvBuffer, int time_
 	if(status_SOH != CMD_SUCCESS)
 		xil_printf("12 save sd 3 DAQ\n");
 
-	//TESTING 6-13-2019
 #ifdef PRODUCE_RAW_DATA
-//	sd_updateFileRecords("raw_data.bin", file_size(&m_raw_data_file));
 	f_close(&m_raw_data_file);
 #endif
-	//TESTING 6-13-2019
 
-	//cleanup operations
 	//2DH files are closed by that module
 	f_close(&m_EVT_file);
 	f_close(&m_CPS_file);
-
 	return status;
 }

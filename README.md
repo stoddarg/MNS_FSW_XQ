@@ -5,3 +5,7 @@
 - Version 2.0 This version pulls in all the changes that have been made to the XC FSW repository for the Mini-NS as of 10/21. This project is to create the XQ boot files which are used by the Mini-NS Flight Unit and the Neutron-1 Flight Unit. This has boot files for version 4 of the FSW at both high and low baud rates.
 
 - Version 2.1 Pulled in the updates from FSW_XC version 6.5. Added the 15ms wait into this version and updated the boot files in the FSBL folder.
+
+--- to match up the version numbers, we are skipping ahead to the current FSW version ---
+
+- Version 7.0 Bug fixes for the HV bug and the DIR checksum; implemented the DIR and DEL functions; other updates, see the main repository
