@@ -13,3 +13,19 @@
 - Version 7.1 Updated boot files for ASU, HSFL FSW projects, these boot files have the bug fixes included
 
 - Version 7.11 Produced boot files for detector 0/1
+
+- Version 7.2.D - in the process of streamlining the process_data and data acquisition system; CPS, 2DH, and SOH have all been updated; working on bringing on CPS data into the SOH; updating the SOH format
+
+- Version 7.3.D - streamlined DAQ is in place; CPS, 2DH, and SOH have all been updated with new data product format; SOH output is updated
+ 
+- Version 7.4.D - moved streamline files into place
+ 
+- Version 7.5.D - Tested the streamline update in XC; moved the bug fixes into this version
+
+- Version 7.6.D - Loaded the XC boot files onto the XC board upstairs at ASU and got data back
+ 
+- Version 7.6 - Test version of the CPS update to the FSW; the streamlined DAQ is being tested on the XQ chip, it worked for CPS, SOH on the XC
+ 
+- Version 7.7 - Created a version with has the streamline updates, added a fix for the 2DH files; rebuilt for d0, d1
+
+- Version 7.8 Import the changes that I made in local versions of the FSW; coordinating the changes across both XC/XQ directories; 
