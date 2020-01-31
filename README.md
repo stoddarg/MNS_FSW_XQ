@@ -11,3 +11,5 @@
 - Version 7.0 Bug fixes for the HV bug and the DIR checksum; implemented the DIR and DEL functions; other updates, see the main repository
 
 - Version 7.1 Updated boot files for ASU, HSFL FSW projects, these boot files have the bug fixes included
+
+- Version 7.11 Produced boot files for detector 0/1
