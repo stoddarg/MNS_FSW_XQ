@@ -1,7 +1,0 @@
-//arch = zynq; split = false; format = MCS
-the_ROM_image:
-{
-	[bootloader]K:\users\GStoddard\MNS_FSW_XQ_preV4\MNS_FSW_XQ_preV4_FSBL\Release\MNS_FSW_XQ_preV4_FSBL.elf
-	K:\users\GStoddard\MNS_FSW_XQ_preV4\design_1_wrapper_hw_platform_0\design_1_wrapper.bit
-	K:\users\GStoddard\MNS_FSW_XQ_preV4\MNS_FSW_XQ_preV4_src\Release\MNS_FSW_XQ_preV4_src.elf
-}
